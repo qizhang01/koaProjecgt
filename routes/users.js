@@ -141,4 +141,32 @@ router.post('/enduse', async(ctx, next)=> {
     msg : '操作成功',
   }
 })
+
+//本人修改密码
+router.post('/modifypasswordbyself', async (ctx, next) =>{
+  const {password, id, newpassword} = ctx.request.body  
+  console.log(id)
+  const sql = `update authlist set password="${newpassword}" where id="${id}" and password="${password}"`
+  const res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  if(res.changedRows!=0){
+    ctx.body = {
+      code : 200,
+      msg : '更新密码成功',
+    }
+  }else if(res.changedRows==0){
+    ctx.body = {
+      code : 200,
+      msg : '原密码输入错误, 请重新输入',
+    }
+  }
+})
 module.exports = router
