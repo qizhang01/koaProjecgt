@@ -3,6 +3,36 @@ const connection = require('../public/javascripts/mysql.js')
 router.prefix('/api/users')
 
 const tableDesc = "authlist(userno,name,password,roles)"
+//登录接口
+router.post('/login', async (ctx, next)=> {
+  const {username,password} = ctx.request.body
+  const  sql = `SELECT id, roles  FROM authlist where userno="${username}" and password="${password}"`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  if(res.length==1){
+    ctx.body = {
+      code : 200,
+      msg : '',
+      data : res[0]
+    }
+  }else{
+    ctx.body = {
+      code : 300,
+      msg : '用户名或者密码错误',
+      data : res
+    }
+  }
+})
+
 //查询所有用户信息
 router.get('/allusers', async (ctx, next)=> {
   const  sql = 'SELECT * FROM authlist'
@@ -59,7 +89,7 @@ router.post('/updatepassword', async (ctx, next) =>{
       }
     });
   })
-
+  
   ctx.type =  'json'
   ctx.body = {
     code : 200,
