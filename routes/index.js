@@ -9,10 +9,12 @@ router.get('/', async (ctx, next) => {
   })
 })
 
-router.get('/productlist', async (ctx, next) => {
-   
-  var  sql = 'SELECT * FROM productlist where ifdelete != 1';
-
+router.post('/productlist', async (ctx, next) => {
+  const {id, roles} = ctx.request.body
+  let sql = 'SELECT * FROM productlist where ifdelete != 1'
+  if(!roles.includes("ADMIN")){
+    sql = `SELECT * FROM productlist where ifdelete != 1 and userno="${id}"`
+  }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
