@@ -6,7 +6,7 @@ const tableDesc = "authlist(userno,name,password,roles)"
 //登录接口
 router.post('/login', async (ctx, next)=> {
   const {username,password} = ctx.request.body
-  const  sql = `SELECT id, roles  FROM authlist where userno="${username}" and password="${password}"`
+  const  sql = `SELECT id, roles  FROM authlist where userno="${username}" and password="${password}" and ifopen=1`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){

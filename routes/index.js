@@ -11,9 +11,10 @@ router.get('/', async (ctx, next) => {
 
 router.post('/productlist', async (ctx, next) => {
   const {id, roles} = ctx.request.body
-  let sql = 'SELECT * FROM productlist where ifdelete != 1'
+  // select p.id, p.name, p.goods_type, p.goods_no, p.model_type, p.price, p.unit,p.ifopen, p.goods_prod_address, p.buy_date, p.buy_number, p.store_house, p.delivery_address, a.name as username from productlist p left join authlist a on p.userno=a.id
+  let sql = 'select p.id, p.name, p.goods_type, p.goods_no, p.model_type, p.price, p.unit,p.ifopen, p.goods_prod_address, p.buy_date, p.buy_number, p.store_house, p.delivery_address, p.userno, a.name as username from productlist p left join authlist a on p.userno=a.id where p.ifdelete != 1'
   if(!roles.includes("ADMIN")){
-    sql = `SELECT * FROM productlist where ifdelete != 1 and userno="${id}"`
+    sql = `select p.id, p.name, p.goods_type, p.goods_no, p.model_type, p.price, p.unit,p.ifopen, p.goods_prod_address, p.buy_date, p.buy_number, p.store_house, p.delivery_address, p.userno, a.name as username from productlist p left join authlist a on p.userno=a.id where p.ifdelete != 1 and p.userno="${id}"`
   }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
