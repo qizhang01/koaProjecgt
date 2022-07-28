@@ -162,4 +162,25 @@ router.post('/startorend', async (ctx, next)=>{
   }
 })
 
+
+router.post('/updateProduction', async (ctx, next)=>{
+  const { productName,modelType, id} = ctx.request.body 
+  const sql = `update productlist set name="${productName}",model_type="${modelType}" where id="${id}"`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '修改成功',
+  }
+})
 module.exports = router
