@@ -183,4 +183,52 @@ router.post('/updateProduction', async (ctx, next)=>{
     msg : '修改成功',
   }
 })
+
+router.post('/importstandard', async (ctx, next) => {
+  const {excelData, userno} = ctx.request.body 
+  const strArr = excelData.map(item=>{
+    const {name="",goodsType="",goodsNo="", goodsCode="", goodsNorms=""}=item
+    const res = `("${name}","${goodsNo}","${goodsType}","${goodsCode}","${goodsNorms}", ${userno})`
+    return res
+  })
+  const value = strArr.join(',')
+  const sql = `INSERT INTO standard(name, goodsno, goodstype, goodscode, goodsnorms, userno) VALUES ${value}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+router.get('/getstandard', async (ctx, next) => {
+  const sql = `select * from  standard`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
 module.exports = router

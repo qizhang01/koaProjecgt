@@ -157,4 +157,40 @@ router.post('/submittestingresult', async(ctx, next)=> {
     data: {rightNumber, tempObj}
   }
 })
+
+//修改试题库名称
+router.post('/modifylibname', async (ctx, next)=> {
+  let  sql = `select name, tablename from testinglibname`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  console.log(res)
+  const {orginname, newname} = ctx.request.body 
+  const value = res[0].name.replace(orginname,newname)
+
+  sql = `update testinglibname set name="${value}" `
+  res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '修改成功',
+    data: res
+  }
+})
 module.exports = router

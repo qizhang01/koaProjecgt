@@ -1,5 +1,6 @@
 const router = require('koa-router')()
 const connection = require('../public/javascripts/mysql.js')
+const getScoreById= require('./utils.js')
 router.prefix('/api/users')
 
 const tableDesc = "authlist(userno,name,password,roles)"
@@ -167,6 +168,20 @@ router.post('/modifypasswordbyself', async (ctx, next) =>{
       code : 200,
       msg : '原密码输入错误, 请重新输入',
     }
+  }
+})
+
+
+//获取测验成绩
+router.post('/alltestingscore', async (ctx, next)=> {
+  const {id} = ctx.request.body  
+  const res=await getScoreById(id)
+  console.log(res)
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '获取成功',
+    data: res
   }
 })
 module.exports = router
