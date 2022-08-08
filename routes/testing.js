@@ -39,9 +39,9 @@ router.post('/alltopics', async (ctx, next)=> {
   const {tablename , answer} = ctx.request.body
   let sql = ''
   if(answer){
-    sql = `select topic, answer from ${tablename}`
+    sql = `select id, topic, answer from ${tablename}`
   }else{
-    sql = `select topic,A,B,C,D,E,F,G from ${tablename}`
+    sql = `select id,topic,A,B,C,D,E,F,G from ${tablename}`
   }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -190,6 +190,28 @@ router.post('/modifylibname', async (ctx, next)=> {
   ctx.body = {
     code : 200,
     msg : '修改成功',
+    data: res
+  }
+})
+
+//删除id试题
+router.post('/deletetopic', async (ctx, next)=> {
+  const {tablename , id} = ctx.request.body
+  const sql = `delete from ${tablename} where id="${id}"`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '删除成功',
     data: res
   }
 })
