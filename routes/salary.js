@@ -124,4 +124,57 @@ router.post('/updatetotalsalary', async (ctx, next) => {
     msg : '提交成功',
   }
 })
+
+//保存按月结的一个记录
+router.post('/update', async (ctx, next) => {
+  const {salarytype, name, employeeid,  salaryday, worklong=0, worklongmoney=0} = ctx.request.body
+  let sql=""
+  if(salarytype=="日结"){
+    sql = `update salary_day set salaryday=${salaryday}, worklong=${worklong}, worklongmoney=${worklongmoney} where employeeid="${employeeid}"`
+  }else {
+    sql = `update salary_month set salaryday=${salaryday} where employeeid="${employeeid}"`
+  }
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '更新成功',
+  }
+})
+
+//保存按月结的一个记录
+router.post('/delete', async (ctx, next) => {
+  const {salarytype, name, employeeid} = ctx.request.body
+  let tablename=""
+  if(salarytype=="日结"){
+    tablename="salary_day"
+  }else {
+    tablename="salary_month"
+  }
+  const sql = `delete from ${tablename} where employeeid="${employeeid}"`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '删除成功',
+  }
+})
 module.exports = router
