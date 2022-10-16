@@ -4,9 +4,9 @@ router.prefix('/api/salary')
 
 //保存按日结的一个记录
 router.post('/savesimpleday', async (ctx, next) => {
-  const {salarytype, name,employeeid,workday, salaryday, worklong, worklongmoney,totalSalary, userno} = ctx.request.body 
-  const value = `("${salarytype}","${name}","${employeeid}","${workday}", ${salaryday}, ${worklong}, ${worklongmoney}, ${totalSalary}, ${userno})`
-  const sql = `INSERT INTO salary_day(salarytype, name,employeeid, workday, salaryday, worklong, worklongmoney, totalSalary, userno) VALUES ${value}`
+  const {salarytype, name,employeeid,salaryworkovertime, salaryday, worklong, worklongmoney, userno} = ctx.request.body 
+  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime}, ${salaryday}, ${worklong}, ${worklongmoney}, ${userno})`
+  const sql = `INSERT INTO salary_day(salarytype, name,employeeid, salaryworkovertime, salaryday, worklong, worklongmoney, userno) VALUES ${value}`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -27,9 +27,9 @@ router.post('/savesimpleday', async (ctx, next) => {
 
 //保存按月结的一个记录
 router.post('/savesimplemonth', async (ctx, next) => {
-  const {salarytype, name,employeeid,workday, monthholiday, salaryday, totalSalary, userno} = ctx.request.body 
-  const value = `("${salarytype}","${name}","${employeeid}","${workday}","${monthholiday}",${salaryday}, ${totalSalary}, ${userno})`
-  const sql = `INSERT INTO salary_month(salarytype, name, employeeid, workday, monthholiday, salaryday, totalSalary, userno) VALUES ${value}`
+  const {salarytype, name,employeeid, salaryworkovertime, salaryday,  userno} = ctx.request.body 
+  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime},${salaryday},  ${userno})`
+  const sql = `INSERT INTO salary_month(salarytype, name, employeeid, salaryworkovertime, salaryday, userno) VALUES ${value}`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -50,7 +50,7 @@ router.post('/savesimplemonth', async (ctx, next) => {
 
 
 router.get('/getallemployeesalary', async (ctx, next) => {
-  const sql = `select  a.salarytype, a.name, a.employeeid, a.salaryday, a.totalSalary, a.worklong, a.worklongmoney from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.salaryday, b.totalSalary, 0 as worklong, 0 as worklongmoney from salary_month b`
+  const sql = `select  a.salarytype, a.name, a.employeeid, a.salaryday, a.salaryworkovertime, a.totalSalary, a.worklong, a.worklongmoney from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.salaryday, b.salaryworkovertime, b.totalSalary, 0 as worklong, 0 as worklongmoney from salary_month b`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -127,12 +127,12 @@ router.post('/updatetotalsalary', async (ctx, next) => {
 
 //保存按月结的一个记录
 router.post('/update', async (ctx, next) => {
-  const {salarytype, name, employeeid,  salaryday, worklong=0, worklongmoney=0} = ctx.request.body
+  const {salarytype, name, employeeid,  salaryday, worklong=0, worklongmoney=0, salaryworkovertime=0} = ctx.request.body
   let sql=""
   if(salarytype=="日结"){
-    sql = `update salary_day set salaryday=${salaryday}, worklong=${worklong}, worklongmoney=${worklongmoney} where employeeid="${employeeid}"`
+    sql = `update salary_day set salaryday=${salaryday}, salaryworkovertime=${salaryworkovertime}, worklong=${worklong}, worklongmoney=${worklongmoney} where employeeid="${employeeid}"`
   }else {
-    sql = `update salary_month set salaryday=${salaryday} where employeeid="${employeeid}"`
+    sql = `update salary_month set salaryday=${salaryday}, salaryworkovertime=${salaryworkovertime} where employeeid="${employeeid}"`
   }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
