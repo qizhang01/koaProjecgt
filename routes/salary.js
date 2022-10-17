@@ -4,9 +4,9 @@ router.prefix('/api/salary')
 
 //保存按日结的一个记录
 router.post('/savesimpleday', async (ctx, next) => {
-  const {salarytype, name,employeeid,salaryworkovertime, salaryday, worklong, worklongmoney, userno} = ctx.request.body 
-  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime}, ${salaryday}, ${worklong}, ${worklongmoney}, ${userno})`
-  const sql = `INSERT INTO salary_day(salarytype, name,employeeid, salaryworkovertime, salaryday, worklong, worklongmoney, userno) VALUES ${value}`
+  const {salarytype, name,employeeid,salaryworkovertime, salaryday, worklong, worklongmoney, salarymiddleworkday, salarynightworkday, userno} = ctx.request.body 
+  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime}, ${salaryday}, ${worklong}, ${worklongmoney}, ${salarymiddleworkday}, ${salarynightworkday}, ${userno})`
+  const sql = `INSERT INTO salary_day(salarytype, name,employeeid, salaryworkovertime, salaryday, worklong, worklongmoney, salarymiddleworkday, salarynightworkday, userno) VALUES ${value}`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -27,9 +27,9 @@ router.post('/savesimpleday', async (ctx, next) => {
 
 //保存按月结的一个记录
 router.post('/savesimplemonth', async (ctx, next) => {
-  const {salarytype, name,employeeid, salaryworkovertime, salaryday,  userno} = ctx.request.body 
-  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime},${salaryday},  ${userno})`
-  const sql = `INSERT INTO salary_month(salarytype, name, employeeid, salaryworkovertime, salaryday, userno) VALUES ${value}`
+  const {salarytype, name,employeeid, salaryworkovertime, salaryday, salarymiddleworkday, salarynightworkday, userno} = ctx.request.body 
+  const value = `("${salarytype}","${name}","${employeeid}",${salaryworkovertime},${salaryday}, ${salarymiddleworkday}, ${salarynightworkday}, ${userno})`
+  const sql = `INSERT INTO salary_month(salarytype, name, employeeid, salaryworkovertime, salaryday, salarymiddleworkday, salarynightworkday, userno) VALUES ${value}`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
