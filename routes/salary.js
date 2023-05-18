@@ -50,7 +50,7 @@ router.post('/savesimplemonth', async (ctx, next) => {
 
 
 router.get('/getallemployeesalary', async (ctx, next) => {
-  const sql = `select  a.salarytype, a.name, a.employeeid, a.salaryday, a.salaryworkovertime, a.totalSalary, a.worklong, a.worklongmoney from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.salaryday, b.salaryworkovertime, b.totalSalary, 0 as worklong, 0 as worklongmoney from salary_month b`
+  const sql = `select  a.salarytype, a.name, a.employeeid, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney from salary_month b`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
