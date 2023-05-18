@@ -81,10 +81,10 @@ router.post('/updatetotalsalary', async (ctx, next) => {
     const {totalSalary, salarytype} = d[item]
     if(salarytype=="日结"){
       dayArr.push(item)
-      salary_daysql = salary_daysql + ` WHEN ${item} THEN ${totalSalary}`
+      salary_daysql = salary_daysql + `UPDATE salary_day SET totalSalary = ${totalSalary} where employeeid = '${item}' ; `
     }else {
       monthArr.push(item)
-      salary_monthsql = salary_monthsql + ` WHEN ${item} THEN ${totalSalary}`
+      salary_monthsql = salary_monthsql + `UPDATE salary_month SET totalSalary = ${totalSalary} where employeeid = '${item}' ; `
       // UPDATE salary_month SET
       //   column1 = CASE column2
       //       WHEN column1Value1 THEN column2Value1
@@ -95,29 +95,32 @@ router.post('/updatetotalsalary', async (ctx, next) => {
     }
   })
 
-  const sqlday = `UPDATE salary_day SET totalSalary = CASE employeeid${salary_daysql} END WHERE employeeid IN(${dayArr.join(',')})`
-  const sqlmonth = `UPDATE salary_month SET totalSalary = CASE employeeid${salary_monthsql} END WHERE employeeid IN(${monthArr.join(',')})`
-  // const sql = sqlday + ' union '+sqlmonth
-  let res1 = await new Promise((resolve,reject)=>{
-    connection.query(sqlday,function (err, result) {
-      if(err){
-        console.log(err.message);
-        reject(err)
-      }else{
-        resolve(result)
-      }
-    });
-  })
-  let res2 = await new Promise((resolve,reject)=>{
-    connection.query(sqlmonth,function (err, result) {
-      if(err){
-        console.log(err.message);
-        reject(err)
-      }else{
-        resolve(result)
-      }
-    });
-  })
+  // const sqlday = `UPDATE salary_day SET totalSalary = CASE employeeid${salary_daysql} END WHERE employeeid IN(${dayArr.join(',')})`
+  // const sqlmonth = `UPDATE salary_month SET totalSalary = CASE employeeid${salary_monthsql} END WHERE employeeid IN(${monthArr.join(',')})`
+  if(salary_daysql){
+    let res1 = await new Promise((resolve,reject)=>{
+      connection.query(salary_daysql,function (err, result) {
+        if(err){
+          console.log(err.message);
+          reject(err)
+        }else{
+          resolve(result)
+        }
+      });
+    })
+  }
+  if(salary_monthsql){
+    let res2 = await new Promise((resolve,reject)=>{
+      connection.query(salary_monthsql,function (err, result) {
+        if(err){
+          console.log(err.message);
+          reject(err)
+        }else{
+          resolve(result)
+        }
+      });
+    })
+  }
   ctx.type =  'json'
   ctx.body = {
     code : 200,
