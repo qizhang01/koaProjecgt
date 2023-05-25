@@ -5,6 +5,25 @@ const querystring = require('querystring')
 router.prefix('/api/testing')
 
 const tableDesc = "testinglib1(name,topic,oneSelect,answer,A,B,C,D,E,F,G)"
+
+const excelTableDesc = "testinglib1(G,topic,A,B,C,D,answer,oneSelect)"
+
+var randomIntNum = function(maxNum, n) {
+  var oArr = [];
+  var newArr = [];
+  var rNum;
+  for (var i = 0; i < n;) {
+      rNum = parseInt(Math.random() * maxNum + 1);
+      if (!oArr[rNum]) {
+          oArr[rNum] = rNum;
+          (rNum < 10) && (rNum = '0' + rNum);
+          newArr.push(rNum);
+          i++;
+      }
+  }
+  return newArr;
+}
+
 //登录接口
 router.post('/importonetopic', async (ctx, next)=> {
   const {name,topic,A,B,C="",D="",E="",F="",G="",oneSelect,answer} = ctx.request.body
@@ -33,6 +52,34 @@ router.post('/importonetopic', async (ctx, next)=> {
   }
 })
 
+//excel 导入测试题
+router.post('/importalltestcasebyexcel', async (ctx, next)=> {
+  const datalist = ctx.request.body
+  const  sql = `INSERT INTO ${excelTableDesc} VALUES ${datalist.join(',')}`
+  console.log(sql)
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  if(res.protocol41){
+    ctx.body = {
+      code : 200,
+      msg : '提交成功',
+    }
+  }else{
+    ctx.body = {
+      code : 300,
+      msg : '提交失败, 请重新提交',
+    }
+  }
+})
 
 //获取试题
 router.post('/alltopics', async (ctx, next)=> {
