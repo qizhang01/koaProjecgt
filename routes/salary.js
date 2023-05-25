@@ -97,6 +97,31 @@ router.post('/updatetotalsalary', async (ctx, next) => {
 
   // const sqlday = `UPDATE salary_day SET totalSalary = CASE employeeid${salary_daysql} END WHERE employeeid IN(${dayArr.join(',')})`
   // const sqlmonth = `UPDATE salary_month SET totalSalary = CASE employeeid${salary_monthsql} END WHERE employeeid IN(${monthArr.join(',')})`
+  //首先把上个月的薪水先设置为0
+
+  await new Promise((resolve,reject)=>{
+    connection.query('UPDATE salary_day SET totalSalary = null ',function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+
+  await new Promise((resolve,reject)=>{
+    connection.query('UPDATE salary_monthsql SET totalSalary = null ',function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+
+  //
   if(salary_daysql){
     let res1 = await new Promise((resolve,reject)=>{
       connection.query(salary_daysql,function (err, result) {
