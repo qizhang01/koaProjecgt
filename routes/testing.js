@@ -4,10 +4,11 @@ const querystring = require('querystring')
 
 router.prefix('/api/testing')
 
-const tableDesc = "testinglib1(name,topic,oneSelect,answer,A,B,C,D,E,F,G)"
+const tableDesc1 = "testinglib1(name,topic,oneSelect,answer,A,B,C,D,E,F,G)"
+const tableDesc2 = "testinglib1(name,topic,oneSelect,answer,A,B,C,D,E,F,G)"
 
-const excelTableDesc = "testinglib1(G,topic,A,B,C,D,answer,oneSelect)"
-
+const excelTableDesc1 = "testinglib1(G,topic,A,B,C,D,answer,oneSelect)"
+const excelTableDesc2 = "testinglib2(G,topic,A,B,C,D,answer,oneSelect)"
 var randomIntNum = function(maxNum, n) {
   var oArr = [];
   var newArr = [];
@@ -27,6 +28,10 @@ var randomIntNum = function(maxNum, n) {
 //登录接口
 router.post('/importonetopic', async (ctx, next)=> {
   const {name,topic,A,B,C="",D="",E="",F="",G="",oneSelect,answer} = ctx.request.body
+  let tableDesc = tableDesc1
+  if(name=="testinglib2"){
+    tableDesc = tableDesc2
+  }
   const  sql = `INSERT INTO ${tableDesc} VALUES("${name}","${topic}", ${oneSelect}, "${answer}","${A}", "${B}", "${C}", "${D}","${E}","${F}","${G}")`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -54,8 +59,12 @@ router.post('/importonetopic', async (ctx, next)=> {
 
 //excel 导入测试题
 router.post('/importalltestcasebyexcel', async (ctx, next)=> {
-  const datalist = ctx.request.body
-  const  sql = `INSERT INTO ${excelTableDesc} VALUES ${datalist.join(',')}`
+  const {tablename,excelData}= ctx.request.body
+  let excelTableDesc = excelTableDesc1
+  if(tablename=="testinglib2"){
+    excelTableDesc = excelTableDesc2
+  }
+  const  sql = `INSERT INTO ${excelTableDesc} VALUES ${excelData.join(',')}`
   console.log(sql)
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -83,7 +92,7 @@ router.post('/importalltestcasebyexcel', async (ctx, next)=> {
 
 //获取试题
 router.post('/alltopics', async (ctx, next)=> {
-  const {tablename , answer} = ctx.request.body
+  const {tablename , answer, number} = ctx.request.body
   let sql = ''
   if(answer){
     sql = `select id, topic, answer from ${tablename}`
@@ -100,6 +109,11 @@ router.post('/alltopics', async (ctx, next)=> {
       }
     });
   })
+
+  if( number && res.length > number){
+    const templist = randomIntNum(res.length, number).map(item=>res[item])
+    res = templist
+  }
   ctx.type =  'json'
   ctx.body = {
     code : 200,
@@ -134,7 +148,7 @@ router.get('/alltestinglibname', async (ctx, next)=> {
 router.post('/submittestingresult', async(ctx, next)=> {
   const {tablename, selectedArr, id} = ctx.request.body 
 
-  let sql = `select topic, answer from ${tablename}`
+  let sql = `select id, answer from ${tablename}`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -144,22 +158,26 @@ router.post('/submittestingresult', async(ctx, next)=> {
       }
     });
   })
+  const answermap = new Map()
+  res.forEach(element => {
+    answermap.set(element.id, element.answer)
+  })
 
   let rightNumber = 0,
         tempObj= []
   for (let i = 0; i < selectedArr.length; i++) {
-      if (selectedArr[i] !== res[i].answer) {
-          tempObj.push({
-              value: selectedArr[i],
-              isTrue: false,
-          })
-      } else {
-          rightNumber++
-          tempObj.push({
-              value: selectedArr[i],
-              isTrue: true,
-          })
-      }
+    if (selectedArr[i].answer !== answermap.get(selectedArr[i].id).answer) {
+        tempObj.push({
+            value: selectedArr[i],
+            isTrue: false,
+        })
+    } else {
+        rightNumber++
+        tempObj.push({
+            value: selectedArr[i],
+            isTrue: true,
+        })
+    }
   }
 
   const searchsql = `select score from authlist where id="${id}"`
