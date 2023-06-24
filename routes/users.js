@@ -3,11 +3,11 @@ const connection = require('../public/javascripts/mysql.js')
 const getScoreById= require('./utils.js')
 router.prefix('/api/users')
 
-const tableDesc = "authlist(userno,name,password,roles)"
+const tableDesc = "authlist(userno,name,password,roles,departmentname)"
 //登录接口
 router.post('/login', async (ctx, next)=> {
   const {username,password} = ctx.request.body
-  const  sql = `SELECT id, roles  FROM authlist where userno="${username}" and password="${password}" and ifopen=1`
+  const  sql = `SELECT id, roles, departmentname, name FROM authlist where userno="${username}" and password="${password}" and ifopen=1`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -56,8 +56,8 @@ router.get('/allusers', async (ctx, next)=> {
 })
 //添加一个账户
 router.post('/addaccount', async (ctx, next) =>{
-  const {userno,name,password, roles} = ctx.request.body
-  const sql = `INSERT INTO ${tableDesc} VALUES("${userno}","${name}","${password}","${roles}")`
+  const {userno,name,password, roles, departmentname} = ctx.request.body
+  const sql = `INSERT INTO ${tableDesc} VALUES("${userno}","${name}","${password}","${roles}"),"${departmentname}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -80,6 +80,29 @@ router.post('/updatepassword', async (ctx, next) =>{
   const {password,id} = ctx.request.body  
   console.log(id)
   const sql = `update authlist set password="${password}" where id="${id}"`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '更新密码成功',
+  }
+})
+
+//更新项目部
+router.post('/updatedepartment', async (ctx, next) =>{
+  const {departmentname,id} = ctx.request.body  
+  console.log(id)
+  const sql = `update authlist set departmentname="${departmentname}" where id="${id}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){

@@ -50,7 +50,7 @@ router.post('/savesimplemonth', async (ctx, next) => {
 
 
 router.get('/getallemployeesalary', async (ctx, next) => {
-  const sql = `select  a.salarytype, a.name, a.employeeid, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b`
+  const sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -205,4 +205,44 @@ router.post('/delete', async (ctx, next) => {
     msg : '删除成功',
   }
 })
+
+//保存按月结的一个记录
+router.post('/updatedepartment', async (ctx, next) => {
+  const body = ctx.request.body
+  console.log(body)
+  let sql1="", sql2 = ""
+
+  Object.keys(body).forEach(key=>{
+    sql1 = sql1 + `update salary_day set departmentname="${body[key]}" where employeeid="${key}";`
+    sql2 = sql2 + `update salary_month set departmentname="${body[key]}" where employeeid="${key}";`
+  })
+  // let sql1= `update salary_day set salaryday=${salaryday}, salaryworkovertime=${salaryworkovertime}, worklong=${worklong}, worklongmoney=${worklongmoney}, foodpayday = ${foodpayday} where employeeid="${employeeid}"`
+
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql1,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  let res2 = await new Promise((resolve,reject)=>{
+    connection.query(sql2,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '更新成功',
+  }
+})
+
 module.exports = router
