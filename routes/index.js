@@ -231,4 +231,251 @@ router.get('/getstandard', async (ctx, next) => {
   }
 })
 
+// transaction 入职
+router.post('/submitonwork', async (ctx, next) => {
+  const {type, name, departmentname, submitname, identityid, tel, emergency, emergencytel} = ctx.request.body 
+  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}","${tel}","${emergency}","${emergencytel}")`
+  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid, tel,emergency, emergencytel ) VALUES ${value}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//离职
+router.post('/submitoffwork', async (ctx, next) => {
+  const {type, name, departmentname, submitname, identityid} = ctx.request.body 
+  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}")`
+  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid) VALUES ${value}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//营运部审批状态
+router.post('/submitoperate', async (ctx, next) => {
+  const {type, id, operatestatus } = ctx.request.body 
+  let tablename = gettablename(type)
+  const sql = `update ${tablename} set operatestatus="${operatestatus}" where id=${id}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+const gettablename=(type)=>{
+    if(type==1){
+       return "transaction"
+    }else if(type==2){
+        return "applyforovertimework"
+    }else if(type==3){
+        return "applyforaddsalary"
+    }
+}
+//hr审批状态
+router.post('/submithr', async (ctx, next) => {
+  const {id, type, hrstatus} = ctx.request.body 
+  let tablename = gettablename(type)
+  const sql = `update ${tablename} set hrstatus = "${hrstatus}" where id=${id}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+
+//入职离职审批状态
+router.get('/getonoroffworkstatus', async (ctx, next) => {
+  const sql = `select * from transaction`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+
+//加薪申请查询applyforaddsalary
+router.get('/applyforaddsalarystatus', async (ctx, next) => {
+  const sql = `select * from applyforaddsalary`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//加班申请提交
+
+//离职
+router.post('/submitovertimework', async (ctx, next) => {
+  const { overtimeworklist, departmentname, submitname, startoverworktime,endoverworktime, overworkreason} = ctx.request.body 
+  const value = overtimeworklist.map(item=>`("${item.employeeid}", "${item.name}",  "${departmentname}", "${submitname}","${startoverworktime}", "${endoverworktime}", "${overworkreason}")`)
+  const sql = `INSERT INTO applyforovertimework(employeeid,  name, departmentname, submitname, startoverworktime, endoverworktime, reason) VALUES ${value.join(",")}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//加班申请查询applyforovertimework
+router.get('/applyforovertimeworkstatus', async (ctx, next) => {
+  const sql = `select * from applyforovertimework`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//importallemployeeinfo 导入员工信息表
+router.post('/importallemployeeinfo', async (ctx, next) => {
+  const datalist = ctx.request.body
+  const resultlist = []
+  datalist.map(item=>{
+    const{employeeid, departmentname, name, identityid, borntime, gender,  position="",
+        station="", startworktime="", tel, emergency1="", emergencytel1=0, relationship1="",
+        emergency2="", emergencytel2=0, relationship2=""
+    } = item 
+    const str = `("${employeeid}","${departmentname}","${name}","${identityid}","${borntime}","${gender}","${position}","${station}","${startworktime}","${tel}","${emergency1}", "${emergencytel1}", "${relationship1}","${emergency2}", "${emergencytel2}", "${relationship2}")`
+    resultlist.push(str)
+  })
+  const value = resultlist.join(",")
+
+  const sql = `INSERT INTO employeeinfo(
+                employeeid, departmentname, name, identityid, borntime, gender,  position,
+                station, startworktime, tel, emergency1, emergencytel1, relationship1,
+                emergency2, emergencytel2, relationship2
+  ) VALUES ${value}`
+
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+//根据项目部查询所有员工
+router.post('/applyallemployee', async (ctx, next) => {
+  const {roles, departmentname} = ctx.request.body
+  let sql = `select * from employeeinfo`
+  if(roles!=="ADMIN"){
+    sql = `select * from employeeinfo where departmentname="${departmentname}"`
+  } 
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
 module.exports = router
