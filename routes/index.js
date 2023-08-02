@@ -120,7 +120,6 @@ router.post('/login', async (ctx, next)=>{
 
 router.post('/delete', async (ctx, next)=>{
   const {id} = ctx.request.body  
-  console.log(id)
   const sql = `update productlist set ifdelete=1 where id="${id}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -231,11 +230,42 @@ router.get('/getstandard', async (ctx, next) => {
   }
 })
 
+const generateNewId =(id)=>{
+  const str = id +""
+  let num = Number(str.substr(1)) + 1
+  if(num>=100 && num<1000) return `J000${num}`
+  if(num>=1000 && num<10000) return `J00${num}`
+  if(num>=10000) return `J0${num}`
+}
+
 // transaction 入职
 router.post('/submitonwork', async (ctx, next) => {
-  const {type, name, departmentname, submitname, identityid, tel, emergency, emergencytel} = ctx.request.body 
-  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}","${tel}","${emergency}","${emergencytel}")`
-  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid, tel,emergency, emergencytel ) VALUES ${value}`
+  const {
+    type, name, departmentname, submitname, identityid, tel, gender,
+    emergency1="", emergencytel1="",relationship1="",
+    emergency2="", emergencytel2="", relationship2="", position="", station="",startworktime
+  } = ctx.request.body 
+  const maxEmployeeidSql = "select max(employeeid) from employeeinfo"
+
+  let result = await new Promise((resolve,reject)=>{
+    connection.query(maxEmployeeidSql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  const employeeid = generateNewId(result[0]['max(employeeid)']) 
+  const day = new Date()
+  const str = `("${employeeid}","${departmentname}","${name}","${identityid}","${gender}","${position}","${station}","${startworktime}","${tel}","${emergency1}", "${emergencytel1}", "${relationship1}","${emergency2}", "${emergencytel2}", "${relationship2}", 1)`
+  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}","${tel}","${emergency1}","${emergencytel1}","${startworktime}")`
+  const sql = `INSERT INTO transaction(
+    type, name, departmentname, offerpersonname, identityid, 
+    tel,emergency, emergencytel, timepoint ) VALUES ${value}; INSERT INTO employeeinfo(employeeid, departmentname, name, identityid, gender, position,
+      station, startworktime, tel, emergency1, emergencytel1, relationship1,
+      emergency2, emergencytel2, relationship2, status) VALUES ${str}`
+
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -256,9 +286,9 @@ router.post('/submitonwork', async (ctx, next) => {
 
 //离职
 router.post('/submitoffwork', async (ctx, next) => {
-  const {type, name, departmentname, submitname, identityid} = ctx.request.body 
-  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}")`
-  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid) VALUES ${value}`
+  const {type, name, departmentname, submitname, identityid, startworktime} = ctx.request.body 
+  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}", "${startworktime}")`
+  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid, timepoint) VALUES ${value}; update employeeinfo set status=3 where identityid="${identityid}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -279,9 +309,16 @@ router.post('/submitoffwork', async (ctx, next) => {
 
 //营运部审批状态
 router.post('/submitoperate', async (ctx, next) => {
-  const {type, id, operatestatus } = ctx.request.body 
+  const {type, id, identityid,  operatestatus, transactiontype="" } = ctx.request.body 
   let tablename = gettablename(type)
-  const sql = `update ${tablename} set operatestatus="${operatestatus}" where id=${id}`
+  let sql = `update ${tablename} set operatestatus="${operatestatus}" where id=${id}`
+  if(type==1 && operatestatus=="Y"&&transactiontype=="入职"){
+     sql =  `${sql}; update employeeinfo set status=2 where identityid="${identityid}"`
+  }else if(type==1 && operatestatus=="Y"&&transactiontype=="离职"){
+    sql =  `${sql}; update employeeinfo set status=4 where identityid="${identityid}"`
+  }else if(type==1 && operatestatus=="N"&&transactiontype=="入职"){
+    sql =  `${sql}; delete from employeeinfo  where identityid="${identityid}"`
+  }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -333,8 +370,12 @@ router.post('/submithr', async (ctx, next) => {
 
 
 //入职离职审批状态
-router.get('/getonoroffworkstatus', async (ctx, next) => {
-  const sql = `select * from transaction`
+router.post('/getonoroffworkstatus', async (ctx, next) => {
+  const {departmentname=""} = ctx.request.body 
+  let sql = `select * from transaction`
+  if(departmentname){
+    sql = `select * from transaction where departmentname='${departmentname}'`
+  }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -354,8 +395,12 @@ router.get('/getonoroffworkstatus', async (ctx, next) => {
 
 
 //加薪申请查询applyforaddsalary
-router.get('/applyforaddsalarystatus', async (ctx, next) => {
-  const sql = `select * from applyforaddsalary`
+router.post('/applyforaddsalarystatus', async (ctx, next) => {
+  const {departmentname=""} = ctx.request.body
+  let sql = `select * from applyforaddsalary`
+  if(departmentname){
+    sql = `select * from applyforaddsalary where departmentname='${departmentname}'`
+  } 
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -399,8 +444,13 @@ router.post('/submitovertimework', async (ctx, next) => {
 })
 
 //加班申请查询applyforovertimework
-router.get('/applyforovertimeworkstatus', async (ctx, next) => {
-  const sql = `select * from applyforovertimework`
+router.post('/applyforovertimeworkstatus', async (ctx, next) => {
+  const {departmentname=""} = ctx.request.body
+  let sql = `select * from applyforovertimework`
+  if(departmentname){
+    sql = `select * from applyforovertimework where departmentname='${departmentname}'`
+  }
+
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -437,6 +487,69 @@ router.post('/importallemployeeinfo', async (ctx, next) => {
                 station, startworktime, tel, emergency1, emergencytel1, relationship1,
                 emergency2, emergencytel2, relationship2
   ) VALUES ${value}`
+
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+router.post('/updateemployeeinfobyid', async (ctx, next) => {
+  const {
+    departmentname ="",
+    tel = "",
+    position = "",
+    station ="",  
+    emergency1="", 
+    emergencytel1="", 
+    relationship1="",
+    emergency2="", 
+    emergencytel2="", 
+    relationship2="",
+    employeeid
+  } = ctx.request.body
+  let list = []
+  if(departmentname){
+    list.push(`departmentname="${departmentname}"`)
+  }
+  if(tel){
+    list.push(`tel="${tel}"`)
+  }
+  if(position){
+    list.push(`position="${position}"`)
+  }
+  if(station){
+    list.push(`station="${station}"`)
+  }
+  if(emergency1){
+    list.push(`emergency1="${emergency1}"`)
+  }
+  if(emergencytel1){
+    list.push(`emergencytel1="${emergencytel1}"`)
+  }
+  if(relationship1){
+    list.push(`relationship1="${relationship1}"`)
+  }
+  if(emergency2){
+    list.push(`emergency2="${emergency2}"`)
+  }
+  if(emergencytel2){
+    list.push(`emergencytel2="${emergencytel2}"`)
+  }
+  if(relationship2){
+    list.push(`relationship2="${relationship2}"`)
+  }
+  const sql = `update employeeinfo set ${list.join(",")} where employeeid="${employeeid}"`
 
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {

@@ -57,7 +57,7 @@ router.get('/allusers', async (ctx, next)=> {
 //添加一个账户
 router.post('/addaccount', async (ctx, next) =>{
   const {userno,name,password, roles, departmentname} = ctx.request.body
-  const sql = `INSERT INTO ${tableDesc} VALUES("${userno}","${name}","${password}","${roles}"),"${departmentname}"`
+  const sql = `INSERT INTO ${tableDesc} VALUES("${userno}","${name}","${password}","${roles}","${departmentname}")`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -78,7 +78,6 @@ router.post('/addaccount', async (ctx, next) =>{
 //更新或者重置密码
 router.post('/updatepassword', async (ctx, next) =>{
   const {password,id} = ctx.request.body  
-  console.log(id)
   const sql = `update authlist set password="${password}" where id="${id}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -100,9 +99,33 @@ router.post('/updatepassword', async (ctx, next) =>{
 
 //更新项目部
 router.post('/updatedepartment', async (ctx, next) =>{
-  const {departmentname,id} = ctx.request.body  
-  console.log(id)
+  const {departmentname,id, employeeid} = ctx.request.body  
   const sql = `update authlist set departmentname="${departmentname}" where id="${id}"`
+  const sql1 = `update salary_month set departmentname="${departmentname}" where employeeid="${employeeid}"`
+  const sql2 = `update employeeinfo set departmentname="${departmentname}" where employeeid="${employeeid}"`
+  const lastSql = `${sql}; ${sql1}; ${sql2}`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(lastSql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '更新密码成功',
+  }
+})
+
+//修改工号
+router.post('/updateuserno', async (ctx, next) =>{
+  const {userno, id} = ctx.request.body  
+  const sql = `update authlist set userno="${userno}" where id="${id}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
       if(err){
@@ -124,7 +147,6 @@ router.post('/updatedepartment', async (ctx, next) =>{
 //更新权限
 router.post('/updateroles', async(ctx, next)=> {
   const {roles, id} = ctx.request.body  
-  console.log(roles)
   const sql = `update authlist set roles="${roles}" where id="${id}"`
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -169,7 +191,6 @@ router.post('/enduse', async(ctx, next)=> {
 //本人修改密码
 router.post('/modifypasswordbyself', async (ctx, next) =>{
   const {password, id, newpassword} = ctx.request.body  
-  console.log(id)
   const sql = `update authlist set password="${newpassword}" where id="${id}" and password="${password}"`
   const res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -199,7 +220,6 @@ router.post('/modifypasswordbyself', async (ctx, next) =>{
 router.post('/alltestingscore', async (ctx, next)=> {
   const {id} = ctx.request.body  
   const res=await getScoreById(id)
-  console.log(res)
   ctx.type =  'json'
   ctx.body = {
     code : 200,

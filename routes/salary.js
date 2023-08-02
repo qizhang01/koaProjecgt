@@ -51,8 +51,10 @@ router.post('/savesimplemonth', async (ctx, next) => {
 
 router.post('/getallemployeesalary', async (ctx, next) => {
   const {roles, departmentname} = ctx.request.body
-  let sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b`
-  if(roles!=="ADMIN" || roles !=="HR" || roles!=="OPERATE"){
+  let sql =""
+  if(roles.includes("ADMIN") || roles.includes("HR")){
+    sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b`
+  }else {
     sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a where departmentname="${departmentname}" union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b where departmentname="${departmentname}"`
   }
   let res = await new Promise((resolve,reject)=>{
