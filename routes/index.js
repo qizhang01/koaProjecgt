@@ -245,29 +245,11 @@ router.post('/submitonwork', async (ctx, next) => {
     emergency1="", emergencytel1="",relationship1="",
     emergency2="", emergencytel2="", relationship2="", position="", station="",startworktime
   } = ctx.request.body 
-  const maxEmployeeidSql = "select max(employeeid) from employeeinfo"
 
-  let result = await new Promise((resolve,reject)=>{
-    connection.query(maxEmployeeidSql,function (err, result) {
-      if(err){
-        reject(err)
-      }else{
-        resolve(result)
-      }
-    });
-  })
-  const employeeid = generateNewId(result[0]['max(employeeid)']) 
-  const day = new Date()
-  const str = `("${employeeid}","${departmentname}","${name}","${identityid}","${gender}","${position}","${station}","${startworktime}","${tel}","${emergency1}", "${emergencytel1}", "${relationship1}","${emergency2}", "${emergencytel2}", "${relationship2}", 1)`
-  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}","${tel}","${emergency1}","${emergencytel1}","${startworktime}")`
-  const sql = `INSERT INTO transaction(
-    type, name, departmentname, offerpersonname, identityid, 
-    tel,emergency, emergencytel, timepoint ) VALUES ${value}; INSERT INTO employeeinfo(employeeid, departmentname, name, identityid, gender, position,
-      station, startworktime, tel, emergency1, emergencytel1, relationship1,
-      emergency2, emergencytel2, relationship2, status) VALUES ${str}`
+  const ifHave = `select operatestatus from transaction where identityid="${identityid}"`
 
-  let res = await new Promise((resolve,reject)=>{
-    connection.query(sql,function (err, result) {
+  let res1 = await new Promise((resolve,reject)=>{
+    connection.query(ifHave, function (err, result) {
       if(err){
         console.log(err.message);
         reject(err)
@@ -276,21 +258,62 @@ router.post('/submitonwork', async (ctx, next) => {
       }
     });
   })
-  ctx.type =  'json'
-  ctx.body = {
-    code : 200,
-    msg : '',
-    data : res
+  
+  if(res1.length>0 && !res1[0].operatestatus){
+    ctx.type =  'json'
+    ctx.body = {
+      code : 200,
+      msg : '不能重复提交申请',
+      data : []
+    }
+  }else {
+    const maxEmployeeidSql = "select max(employeeid) from employeeinfo"
+
+    let result = await new Promise((resolve,reject)=>{
+      connection.query(maxEmployeeidSql,function (err, result) {
+        if(err){
+          reject(err)
+        }else{
+          resolve(result)
+        }
+      });
+    })
+    const employeeid = generateNewId(result[0]['max(employeeid)']) 
+    const day = new Date()
+    const str = `("${employeeid}","${departmentname}","${name}","${identityid}","${gender}","${position}","${station}","${startworktime}","${tel}","${emergency1}", "${emergencytel1}", "${relationship1}","${emergency2}", "${emergencytel2}", "${relationship2}", 1)`
+    const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}","${tel}","${emergency1}","${emergencytel1}","${startworktime}")`
+    const sql = `INSERT INTO transaction(
+      type, name, departmentname, offerpersonname, identityid, 
+      tel,emergency, emergencytel, timepoint ) VALUES ${value}; INSERT INTO employeeinfo(employeeid, departmentname, name, identityid, gender, position,
+        station, startworktime, tel, emergency1, emergencytel1, relationship1,
+        emergency2, emergencytel2, relationship2, status) VALUES ${str}`
+
+    let res = await new Promise((resolve,reject)=>{
+      connection.query(sql,function (err, result) {
+        if(err){
+          console.log(err.message);
+          reject(err)
+        }else{
+          resolve(result)
+        }
+      });
+    })
+    ctx.type =  'json'
+    ctx.body = {
+      code : 200,
+      msg : '',
+      data : res
+    }
   }
 })
 
 //离职
 router.post('/submitoffwork', async (ctx, next) => {
   const {type, name, departmentname, submitname, identityid, startworktime} = ctx.request.body 
-  const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}", "${startworktime}")`
-  const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid, timepoint) VALUES ${value}; update employeeinfo set status=3 where identityid="${identityid}"`
+  const ifHave = `select operatestatus from transaction where identityid="${identityid}"`
+
   let res = await new Promise((resolve,reject)=>{
-    connection.query(sql,function (err, result) {
+    connection.query(ifHave, function (err, result) {
       if(err){
         console.log(err.message);
         reject(err)
@@ -299,11 +322,33 @@ router.post('/submitoffwork', async (ctx, next) => {
       }
     });
   })
-  ctx.type =  'json'
-  ctx.body = {
-    code : 200,
-    msg : '',
-    data : res
+
+  if(res.length>0 && !res[0].operatestatus){
+    ctx.type =  'json'
+    ctx.body = {
+      code : 200,
+      msg : '不能重复提交申请',
+      data : []
+    }
+  }else {
+    const value = `("${type}", "${name}", "${departmentname}", "${submitname}","${identityid}", "${startworktime}")`
+    const sql = `INSERT INTO transaction(type, name, departmentname, offerpersonname, identityid, timepoint) VALUES ${value}; update employeeinfo set status=3 where identityid="${identityid}"`
+    res = await new Promise((resolve,reject)=>{
+      connection.query(sql,function (err, result) {
+        if(err){
+          console.log(err.message);
+          reject(err)
+        }else{
+          resolve(result)
+        }
+      });
+    })
+    ctx.type =  'json'
+    ctx.body = {
+      code : 200,
+      msg : '',
+      data : res
+    }
   }
 })
 
@@ -591,4 +636,134 @@ router.post('/applyallemployee', async (ctx, next) => {
     data : res
   }
 })
+
+router.post('/updateemployeetotalinfobyid', async (ctx, next) => {
+  const {excelData} = ctx.request.body
+  let lastSql = []
+  excelData.forEach(element => {
+    const {
+      bornplace,
+      nowaddress,
+      bankaccount,
+      bankname,
+      bankprovince,
+      bankcity,
+      ifneedroom,
+      iffood,
+      employeeid
+    } = element
+
+    let list = []
+    if(bornplace){
+      list.push(`bornplace="${bornplace}"`)
+    }
+    if(nowaddress){
+      list.push(`nowaddress="${nowaddress}"`)
+    }
+    if(bankaccount){
+      list.push(`bankaccount="${bankaccount}"`)
+    }
+    if(bankname){
+      list.push(`bankname="${bankname}"`)
+    }
+    if(bankprovince){
+      list.push(`bankprovince="${bankprovince}"`)
+    }
+    if(bankcity){
+      list.push(`bankcity="${bankcity}"`)
+    }
+    if(ifneedroom=="是"){
+
+      list.push(`ifneedroom=1`)
+    }
+    if(iffood=="是"){
+      list.push(`iffood=1`)
+    }
+    if(list.length>0){
+      const sql = `update employeeinfo set ${list.join(",")} where employeeid="${employeeid}"`
+      lastSql.push(sql)
+    }
+  })
+
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(lastSql.join(";"),function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+
+router.post('/inputcontractinfo', async (ctx, next) => {
+  const {excelData} = ctx.request.body
+
+  let sql = `INSERT INTO contractinfo(employeeid,contractid,firstworktime,announcetime,companyserve,jobtype,contracttype,starttime, endtime, sbaoaddress,sbaotime,sbaochangeaddress,sbaochangetime)`;
+  // let sql = `INSERT INTO contractinfo(employeeid,contractid,firstworktime,announcetime,companyserve,jobtype,contracttype,starttime, endtime)`;
+  const strArr = excelData.map(element => {
+    const {
+        employeeid="",
+        contractid="",
+        firstworktime= "0",
+        announcetime= "0",
+        companyserve="0",
+        jobtype="0",
+        contracttype="0",
+        starttime="0",
+        endtime="0",
+        sbaoaddress="0",
+        sbaotime="0",
+        sbaochangeaddress="0",
+        sbaochangetime="0"
+    } = element
+    return `("${employeeid}","${contractid}","${firstworktime}","${announcetime}","${companyserve}","${jobtype}","${contracttype}","${starttime}","${endtime}","${sbaoaddress}","${sbaotime}","${sbaochangeaddress}","${sbaochangetime}")`
+  })
+  const value = strArr.join(',')
+  const lastSql =  `${sql} VALUES ${value}`
+
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(lastSql, function (err, result) {
+      if(err){
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
+router.get('/getcontractinfo', async (ctx, next) => {
+  const sql = `select p.employeeid,p.contractid,p.firstworktime,p.announcetime,p.companyserve,p.jobtype,p.contracttype,p.starttime, p.endtime, p.sbaoaddress,p.sbaotime,p.sbaochangeaddress,p.sbaochangetime, a.name, a.departmentname from  contractinfo p left join employeeinfo a on p.employeeid=a.employeeid`
+  let res = await new Promise((resolve,reject)=>{
+    connection.query(sql,function (err, result) {
+      if(err){
+        console.log(err.message);
+        reject(err)
+      }else{
+        resolve(result)
+      }
+    });
+  })
+  ctx.type =  'json'
+  ctx.body = {
+    code : 200,
+    msg : '',
+    data : res
+  }
+})
+
 module.exports = router

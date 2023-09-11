@@ -53,9 +53,21 @@ router.post('/getallemployeesalary', async (ctx, next) => {
   const {roles, departmentname} = ctx.request.body
   let sql =""
   if(roles.includes("ADMIN") || roles.includes("HR")){
-    sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b`
+    sql = `select  a.salarytype, a.name, a.employeeid, c.departmentname, a.salaryday, a.salaryworkovertime, 
+    a.salarymiddleworkday, a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday 
+    from  salary_day as a inner join employeeinfo as c where a.employeeid = c.employeeid
+    union all 
+          select  b.salarytype, b.name, b.employeeid, d.departmentname, b.salaryday, b.salaryworkovertime,
+          b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, 
+          b.foodpayday from salary_month as b inner join employeeinfo as d where b.employeeid = d.employeeid`
   }else {
-    sql = `select  a.salarytype, a.name, a.employeeid, a.departmentname, a.salaryday, a.salaryworkovertime, a.salarymiddleworkday,  a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday from  salary_day a where departmentname="${departmentname}" union all select  b.salarytype, b.name, b.employeeid, b.departmentname, b.salaryday, b.salaryworkovertime, b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, b.foodpayday from salary_month b where departmentname="${departmentname}"`
+    sql = `select  a.salarytype, a.name, a.employeeid, c.departmentname, a.salaryday, a.salaryworkovertime, 
+    a.salarymiddleworkday, a.salarynightworkday, a.totalSalary, a.worklong, a.worklongmoney, a.foodpayday 
+    from  salary_day as a inner join employeeinfo as c on a.employeeid = c.employeeid where c.departmentname="${departmentname}"
+    union all 
+          select  b.salarytype, b.name, b.employeeid, d.departmentname, b.salaryday, b.salaryworkovertime,
+          b.salarymiddleworkday, b.salarynightworkday, b.totalSalary, 0 as worklong, 0 as worklongmoney, 
+          b.foodpayday from salary_month as b inner join employeeinfo as d on b.employeeid = d.employeeid where d.departmentname="${departmentname}"`  
   }
   let res = await new Promise((resolve,reject)=>{
     connection.query(sql,function (err, result) {
@@ -117,7 +129,7 @@ router.post('/updatetotalsalary', async (ctx, next) => {
   })
 
   await new Promise((resolve,reject)=>{
-    connection.query('UPDATE salary_monthsql SET totalSalary = null ',function (err, result) {
+    connection.query('UPDATE salary_month SET totalSalary = null ',function (err, result) {
       if(err){
         console.log(err.message);
         reject(err)
